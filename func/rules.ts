@@ -18,10 +18,10 @@ export async function execute(interaction: ChatInputCommandInteraction) {
         "5. ห้ามก่อความวุ่นวาย\n" +
         "6. ห้ามเผยแพร่สื่อ หรือคำพูดที่มีเนื้อหาล่อแหลมอนาจาร\n" +
         "7. ห้ามเผยแพร่สื่อ หรือคำพูดเสียดสี ดูหมิ่นสถาบันและการเมือง\n" +
-        "8. ให้ความเคารพแก่เพื่อนร่วมค่าย พี่ๆ สตาฟฟ์ ทั้งในด้านเชื้อชาติ ศาสนา ความเชื่อ ถิ่นกำเนิดและเพศ",
+        "8. ให้ความเคารพแก่เพื่อนร่วมค่าย พี่ ๆ สตาฟ ทั้งในด้านเชื้อชาติ ศาสนา ความเชื่อ ถิ่นกำเนิดและเพศ",
     )
     .setFooter({ text: "ToBeIT'70" })
-    .setThumbnail(botAvatarURL || ""); // <-- small image top-right
+    .setThumbnail(botAvatarURL || "");
 
     await interaction.reply({ embeds: [embed] });
 }

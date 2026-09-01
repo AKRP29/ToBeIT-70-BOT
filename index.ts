@@ -6,6 +6,7 @@ import {
   Partials,
   REST,
   Routes,
+  MessageFlags,
 } from "discord.js";
 import * as dotenv from "dotenv";
 import config from "./config.ts";
@@ -13,6 +14,7 @@ import { setupGuildMemberAdd } from "./func/welcome.ts";
 import { initializeFonts } from "./utils/canvas.js";
 import * as rules from "./func/rules.ts";
 import * as verify from "./func/verify.ts";
+import * as verifyPanel from "./func/verify-panel.ts";
 import * as say from "./func/say.ts";
 import * as forceVerify from "./func/force-verify.ts";
 import * as fixNames from "./func/fix-names.ts";
@@ -29,6 +31,7 @@ const client = new Client({
 client.commands = new Collection();
 client.commands.set(rules.data.name, rules);
 client.commands.set(verify.data.name, verify);
+client.commands.set(verifyPanel.data.name, verifyPanel);
 client.commands.set(say.data.name, say);
 client.commands.set(forceVerify.data.name, forceVerify)
 // client.commands.set(fixNames.data.name, fixNames)
@@ -54,6 +57,17 @@ client.on("messageCreate", async (msg) => {
 });
 
 client.on(Events.InteractionCreate, async (interaction) => {
+  if (interaction.isButton()) {
+    if (interaction.customId === verify.VERIFY_BUTTON_ID) {
+      try {
+        await verify.handleButton(interaction);
+      } catch (error) {
+        console.error(error);
+      }
+    }
+    return;
+  }
+
   if (!interaction.isChatInputCommand()) return;
 
   const command = client.commands.get(interaction.commandName);
@@ -66,7 +80,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
     console.error(error);
     await interaction.reply({
       content: "There was an error while executing this command!",
-      ephemeral: true,
+      flags: MessageFlags.Ephemeral,
     });
   }
 });
@@ -82,11 +96,10 @@ client.once(Events.ClientReady, async (c) => {
   const rest = new REST().setToken(token!);
   try {
     console.log("Refreshing commands");
-    const guilds = [
-      "1412756673470402634",
-      "1412844099568140410",
-      "1542850423554179183", // test server
-    ]
+    const guilds = (process.env.GUILD_IDS ?? "")
+      .split(",")
+      .map((id) => id.trim())
+      .filter(Boolean);
     for (const guild of guilds) {
       await rest.put(
         Routes.applicationGuildCommands(c.user.id, guild),

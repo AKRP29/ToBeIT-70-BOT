@@ -32,21 +32,18 @@ export function setupGuildMemberAdd(client: Client) {
         return console.warn(
           `No accessible channel to welcome ${member.user.tag}`,
         );
-
-      // Font is now registered during bot initialization
-      // THIS FUNCTION IS WAITING FOR AUTO TO BE MAKING CHANGE.
       const attachment = await createWelcomeBanner(
-        member.user.username, // name of user 
-        member.user.displayAvatarURL({ extension: "png" }), // user profile (dont change)
+        member.user.username,
+        member.user.displayAvatarURL({ extension: "png" }),
         "", // welcome
         "ยินดีต้อนรับ", // top title
-        "สู่ห้วงลึกแห่งกาลเวลา", // bottom title
-        './assets/bg.png', // PNG background (dont change)
-        "js-chusri"
+        "สู่โรงละครสัตว์", // bottom title
+        './assets/bg.png',
+        "JS Chusri"
       );
 
       await channel.send({
-        content: `🕰️ ยินดีต้อนรับ <@${member.id}> สู่ห้วงลึกแห่งกาลเวลา! 📻 `,
+        content: `🎪 ยินดีต้อนรับ <@${member.id}> สู่คณะละครสัตว์! 🤡🎠`,
         files: [attachment],
       });
     } catch (err) {

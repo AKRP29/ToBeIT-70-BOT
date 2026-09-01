@@ -1,4 +1,4 @@
-import { createCanvas, loadImage, registerFont } from "canvas";
+import { createCanvas, loadImage, GlobalFonts } from "@napi-rs/canvas";
 import { AttachmentBuilder } from "discord.js";
 import * as path from "path";
 
@@ -85,9 +85,9 @@ export function registerCustomFont(fontPath: string, fontFamily: string) {
   }
   
   try {
-    registerFont(fontPath, { family: fontFamily, weight: "bold", style: "normal" });
+    GlobalFonts.registerFromPath(fontPath, fontFamily);
     registeredFonts.add(fontKey);
-    console.log(`Font registered: ${fontFamily} from ${fontPath}`);
+    console.log(`Font registered: ${fontFamily} (has=${GlobalFonts.has(fontFamily)}) from ${fontPath}`);
   } catch (error) {
     console.error(`Failed to register font ${fontFamily}:`, error);
   }
@@ -98,8 +98,9 @@ export function registerCustomFont(fontPath: string, fontFamily: string) {
  * Call this once during application startup
  */
 export function initializeFonts() {
-  registerCustomFont("./assets/JS-Chusri-Normal.ttf", "JS-Chusri");
-  registerCustomFont("./assets/JS-Chusri-Normal.ttf", "js-chusri"); // Alternative name used in welcome.ts
+  // Must match the font's real internal family name — canvas/Pango resolves by
+  // that, not by the alias passed to registerFont. Confirmed name: "JS Chusri".
+  registerCustomFont("./assets/JS-Chusri-Normal.ttf", "JS Chusri");
 }
 
 /**
@@ -172,7 +173,7 @@ export async function createWelcomeBanner(
 
   // ===== Emblem text (top) =====
   const fontFamily = customFont || "Sans";
-  ctx.font = `bold 80px ${fontFamily}`;
+  ctx.font = `bold 80px '${fontFamily}'`;
   ctx.textAlign = "center";
   
   // Create gradient for emblem text
@@ -278,14 +279,14 @@ export async function createWelcomeBanner(
 
   // ===== Welcome text (below avatar) =====
   let fontSize = 60; // starting font size - made bigger
-  ctx.font = `normal ${fontSize}px ${fontFamily}`;
+  ctx.font = `normal ${fontSize}px '${fontFamily}'`;
   ctx.textAlign = "center";
   
   const welcomeFullText = welcomeText ? `${welcomeText} ${username}` : username;
   
   while (ctx.measureText(welcomeFullText).width > width - 100) {
     fontSize -= 2;
-    ctx.font = `normal ${fontSize}px ${fontFamily}`;
+    ctx.font = `normal ${fontSize}px '${fontFamily}'`;
   }
   
   // Create gradient for welcome text
@@ -325,7 +326,7 @@ export async function createWelcomeBanner(
 
   // ===== Server name (optional, below welcome text) =====
   if (serverName) {
-    ctx.font = `40px ${fontFamily}`; // made bigger
+    ctx.font = `bold 40px '${fontFamily}'`; // made bigger
     
     // Create gradient for server name
     const serverGradient = ctx.createLinearGradient(0, avatarY + avatarSize + 110, 0, avatarY + avatarSize + 140);

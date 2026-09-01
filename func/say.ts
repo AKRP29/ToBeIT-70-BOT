@@ -5,6 +5,7 @@ import {
   TextChannel,
   Role,
   PermissionFlagsBits,
+  MessageFlags,
 } from "discord.js";
 
 export const data = new SlashCommandBuilder()
@@ -30,8 +31,8 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     .setTitle(title)
     .setDescription(message)
     .setFooter({ text: "ToBeIT'70" })
-    .setThumbnail(interaction.client.user?.displayAvatarURL() || "" || ""); // <-- small image top-right
+    .setThumbnail(interaction.client.user?.displayAvatarURL() || "" || "");
 
   await (channel as TextChannel).send({ embeds: [embed] });
-  await interaction.reply({ content: "พูดไปแล้วจ้า", ephemeral: true });
+  await interaction.reply({ content: "พูดไปแล้วจ้า", flags: MessageFlags.Ephemeral });
 }
