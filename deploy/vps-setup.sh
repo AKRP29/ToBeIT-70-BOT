@@ -9,6 +9,7 @@ fi
 APP_USER="tobeit70"
 APP_DIR="/opt/tobeit-70-bot"
 SERVICE="tobeit-70-bot.service"
+SUDOERS_FILE="/etc/sudoers.d/tobeit70-tobeit-70-bot"
 
 if ! id "$APP_USER" >/dev/null 2>&1; then
   /usr/sbin/useradd --create-home --shell /bin/bash "$APP_USER"
@@ -42,11 +43,11 @@ if [ "$SYSTEMCTL_PATH" != "/usr/bin/systemctl" ]; then
   exit 1
 fi
 
-cat > "/etc/sudoers.d/$APP_USER-$SERVICE" <<'SUDOERS'
+cat > "$SUDOERS_FILE" <<'SUDOERS'
 tobeit70 ALL=(root) NOPASSWD: /usr/bin/systemctl restart tobeit-70-bot.service, /usr/bin/systemctl status --no-pager tobeit-70-bot.service
 SUDOERS
-/bin/chmod 0440 "/etc/sudoers.d/$APP_USER-$SERVICE"
-/usr/sbin/visudo -cf "/etc/sudoers.d/$APP_USER-$SERVICE"
+/bin/chmod 0440 "$SUDOERS_FILE"
+/usr/sbin/visudo -cf "$SUDOERS_FILE"
 
 /usr/bin/systemctl daemon-reload
 /usr/bin/systemctl enable "$SERVICE"

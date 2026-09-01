@@ -50,8 +50,9 @@ tobeit70 ALL=(root) NOPASSWD: /usr/bin/systemctl restart tobeit-70-bot.service, 
 
 This permits unattended restart and status for this exact service only; it does
 not grant `NOPASSWD: ALL`. Edit only with
-`sudo visudo -f /etc/sudoers.d/tobeit70-tobeit-70-bot.service`, then validate
-with `sudo visudo -cf /etc/sudoers.d/tobeit70-tobeit-70-bot.service`.
+`sudo visudo -f /etc/sudoers.d/tobeit70-tobeit-70-bot`, then validate with
+`sudo visudo -cf /etc/sudoers.d/tobeit70-tobeit-70-bot`. Sudo ignores files in
+`/etc/sudoers.d` whose names contain a dot, so do not add a `.service` suffix.
 
 ## Pin the SSH host key in GitHub
 
