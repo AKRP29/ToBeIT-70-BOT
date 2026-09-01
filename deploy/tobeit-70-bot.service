@@ -1,0 +1,22 @@
+[Unit]
+Description=ToBeIT 70 Discord Bot
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=tobeit70
+Group=tobeit70
+WorkingDirectory=/opt/tobeit-70-bot
+Environment=NODE_ENV=production
+EnvironmentFile=/opt/tobeit-70-bot/.env
+ExecStart=/home/tobeit70/.bun/bin/bun index.ts
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=read-only
+
+[Install]
+WantedBy=multi-user.target

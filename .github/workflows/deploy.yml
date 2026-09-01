@@ -1,0 +1,92 @@
+name: Deploy production
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to Ubuntu VPS
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Configure SSH securely
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_KNOWN_HOSTS: ${{ vars.VPS_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          : "${VPS_HOST:?VPS_HOST is required}"
+          : "${VPS_SSH_KEY:?VPS_SSH_KEY is required}"
+          : "${VPS_KNOWN_HOSTS:?production environment variable VPS_KNOWN_HOSTS is required}"
+          VPS_PORT="${VPS_PORT:-22}"
+
+          install -d -m 700 "$RUNNER_TEMP/ssh"
+          printf '%s\n' "$VPS_SSH_KEY" > "$RUNNER_TEMP/ssh/deploy_key"
+          chmod 600 "$RUNNER_TEMP/ssh/deploy_key"
+          printf '%s\n' "$VPS_KNOWN_HOSTS" > "$RUNNER_TEMP/ssh/known_hosts"
+          chmod 600 "$RUNNER_TEMP/ssh/known_hosts"
+
+          if [ "$VPS_PORT" = 22 ]; then
+            SSH_HOST="$VPS_HOST"
+          else
+            SSH_HOST="[$VPS_HOST]:$VPS_PORT"
+          fi
+          ssh-keygen -F "$SSH_HOST" -f "$RUNNER_TEMP/ssh/known_hosts" >/dev/null
+
+      - name: Synchronize application files
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+        run: |
+          set -euo pipefail
+          : "${VPS_USER:?VPS_USER is required}"
+          if [ "$VPS_USER" != "tobeit70" ]; then
+            echo "VPS_USER must be the dedicated tobeit70 application account." >&2
+            exit 1
+          fi
+          VPS_PORT="${VPS_PORT:-22}"
+          SSH_ARGS="-i $RUNNER_TEMP/ssh/deploy_key -p $VPS_PORT -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$RUNNER_TEMP/ssh/known_hosts"
+
+          rsync --archive --compress --delete \
+            --exclude='.env' \
+            --exclude='.env.*' \
+            --exclude='.git/' \
+            --exclude='.github/' \
+            --exclude='node_modules/' \
+            --exclude='uploads/' \
+            --exclude='data/' \
+            -e "ssh $SSH_ARGS" \
+            ./ "$VPS_USER@$VPS_HOST:/opt/tobeit-70-bot/"
+
+      - name: Install production dependencies and restart service
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+        run: |
+          set -euo pipefail
+          VPS_PORT="${VPS_PORT:-22}"
+          ssh \
+            -i "$RUNNER_TEMP/ssh/deploy_key" \
+            -p "$VPS_PORT" \
+            -o BatchMode=yes \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$RUNNER_TEMP/ssh/known_hosts" \
+            "$VPS_USER@$VPS_HOST" \
+            'set -e; cd /opt/tobeit-70-bot; /home/tobeit70/.bun/bin/bun install --frozen-lockfile --production; sudo /usr/bin/systemctl restart tobeit-70-bot.service; sleep 5; /usr/bin/systemctl is-active --quiet tobeit-70-bot.service || { sudo /usr/bin/systemctl status --no-pager tobeit-70-bot.service; exit 1; }'

@@ -1,0 +1,25 @@
+name: CI
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  dependencies:
+    name: Install locked dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies from lockfile
+        run: bun install --frozen-lockfile
+
+      # package.json currently has no working test, lint, typecheck, or build
+      # script. Its "test" script is the npm placeholder and intentionally
+      # exits with an error, so it must not be run as if it were a real test.

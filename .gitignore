@@ -6,3 +6,6 @@ repl-temp-*
 node_modules/
 
 .env
+
+id_ed25519
+id_ed25519.pub
