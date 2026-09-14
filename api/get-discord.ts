@@ -30,6 +30,9 @@ export async function getUserByDiscordId(discordId: string) {
         if (!data?.verified || !data.student) {
             return null;
         }
+        if (data.student.grade?.trim() === "เด็กซิ่ว") {
+            data.student.grade = "ม.6";
+        }
         return data.student;
     } catch (error) {
         console.error("verify API request failed:", (error as Error).message);
