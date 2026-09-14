@@ -11,17 +11,28 @@ export async function getUserByDiscordId(discordId: string) {
         } as PersonalDataResponse;
     }
 
-    const response = await fetch(`${process.env.API_URL}/api/discord/get-user?discord_id=${discordId}`, {
-        method: "GET",
-        headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${process.env.API_KEY}`,
-        },
-    });
-    const data = await response.json() as PersonalDataResponse | { error: string };
-    if (!data || (data as { error: string }).error) {
+    try {
+        const response = await fetch(
+            `${process.env.API_URL}/api/discord/students/verify?discordId=${discordId}&token=${process.env.API_KEY}`,
+            {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                signal: AbortSignal.timeout(10000),
+            },
+        );
+        if (!response.ok) {
+            console.error(`verify API HTTP ${response.status}`);
+            return null;
+        }
+        const data = await response.json() as { verified: boolean; student: PersonalDataResponse | null };
+        if (!data?.verified || !data.student) {
+            return null;
+        }
+        return data.student;
+    } catch (error) {
+        console.error("verify API request failed:", (error as Error).message);
         return null;
     }
-
-    return data;
 }
