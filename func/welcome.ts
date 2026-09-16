@@ -1,6 +1,7 @@
 import { Client, GuildMember, TextChannel } from "discord.js";
 import { createWelcomeBanner } from "../utils/canvas.js";
 import config from "../config.ts";
+import { log, BLUE, RED } from "../utils/logger.ts";
 
 function getWelcomeChannel(member: GuildMember): TextChannel | null {
   // Try system channel
@@ -46,8 +47,16 @@ export function setupGuildMemberAdd(client: Client) {
         content: `🎪 ยินดีต้อนรับ <@${member.id}> สู่คณะละครสัตว์! 🤡🎠`,
         files: [attachment],
       });
+      await log("Member joined", BLUE, {
+        User: `${member.user.tag} (${member.id})`,
+        Channel: `#${channel.name}`,
+      });
     } catch (err) {
       console.error("Error sending welcome message:", err);
+      await log("Welcome message failed", RED, {
+        User: `${member.user.tag} (${member.id})`,
+        Error: (err as Error).message,
+      });
     }
   });
 }

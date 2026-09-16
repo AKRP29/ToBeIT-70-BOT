@@ -1,6 +1,7 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, ButtonInteraction, EmbedBuilder, MessageFlags, AttachmentBuilder } from 'discord.js';
 import { getUserByDiscordId } from '../api/get-discord';
 import type { PersonalDataResponse } from '../api/interface';
+import { log, GREEN, RED, YELLOW } from '../utils/logger';
 
 export const VERIFIED_ROLE_ID = process.env.VERIFIED_ROLE_ID!;
 export const VERIFY_BUTTON_ID = 'verify';
@@ -25,12 +26,20 @@ async function runVerify(interaction: ChatInputCommandInteraction | ButtonIntera
 
     if (member?.roles.cache.has(VERIFIED_ROLE_ID)) {
         await interaction.editReply({ content: "คุณได้ยืนยันตัวตนไปแล้ว" });
+        await log("Verification skipped", YELLOW, {
+            Reason: "Already verified",
+            User: `${interaction.user.tag} (${discord_id})`,
+        });
         return;
     }
 
     const user = await getUserByDiscordId(discord_id) as PersonalDataResponse;
     if (!user) {
         await interaction.editReply({ content: "คุณไม่มีสิทธิ์ใช้งานคำสั่งนี้ เนื่องจากไม่มีชื่อในระบบ ❌ น้องๆได้เชื่อม Discord เดียวกับในเว็บหรือเปล่าเอ่ย" });
+        await log("Verification failed", YELLOW, {
+            Reason: "Not found in system",
+            User: `${interaction.user.tag} (${discord_id})`,
+        });
         return;
     }
 
@@ -40,6 +49,10 @@ async function runVerify(interaction: ChatInputCommandInteraction | ButtonIntera
             await member.roles.add(role);
         } catch (error) {
             console.error('Role add error:', error);
+            await log("Role assignment failed", RED, {
+                User: `${interaction.user.tag} (${discord_id})`,
+                Error: (error as Error).message,
+            });
             await interaction.editReply({ content: "บอทเพิ่มยศให้ไม่ได้ — เช็คว่า bot มีสิทธิ์ Manage Roles และ role ของบอทอยู่เหนือยศที่จะให้" });
             return;
         }
@@ -73,4 +86,12 @@ async function runVerify(interaction: ChatInputCommandInteraction | ButtonIntera
         .setFooter({ text: 'ระบบยืนยันตัวตน', iconURL: 'attachment://ryouu.jpg' });
 
     await interaction.editReply({ embeds: [successEmbed], files: [footerIcon] });
+
+    await log("Verification success", GREEN, {
+        User: `${interaction.user.tag} (${discord_id})`,
+        Name: user.firstName,
+        Nickname: user.nickName,
+        Grade: user.grade,
+        Region: user.region,
+    });
 }

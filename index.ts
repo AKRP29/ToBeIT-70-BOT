@@ -18,6 +18,7 @@ import * as verifyPanel from "./func/verify-panel.ts";
 import * as say from "./func/say.ts";
 import * as forceVerify from "./func/force-verify.ts";
 import * as fixNames from "./func/fix-names.ts";
+import { initLogger, log, GREEN, RED, BLUE } from "./utils/logger.ts";
 dotenv.config();
 const client = new Client({
   intents: [
@@ -63,6 +64,11 @@ client.on(Events.InteractionCreate, async (interaction) => {
         await verify.handleButton(interaction);
       } catch (error) {
         console.error(error);
+        await log("Button handler error", RED, {
+          Button: "verify",
+          User: `${interaction.user.tag} (${interaction.user.id})`,
+          Error: (error as Error).message,
+        });
       }
     }
     return;
@@ -74,10 +80,21 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
   if (!command) return;
 
+  await log("Command used", BLUE, {
+    Command: `/${interaction.commandName}`,
+    User: `${interaction.user.tag} (${interaction.user.id})`,
+    Channel: `#${(interaction.channel as any)?.name ?? interaction.channelId}`,
+  });
+
   try {
     await command.execute(interaction);
   } catch (error) {
     console.error(error);
+    await log("Command error", RED, {
+      Command: `/${interaction.commandName}`,
+      User: `${interaction.user.tag} (${interaction.user.id})`,
+      Error: (error as Error).message,
+    });
     await interaction.reply({
       content: "There was an error while executing this command!",
       flags: MessageFlags.Ephemeral,
@@ -87,7 +104,13 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
 client.once(Events.ClientReady, async (c) => {
   console.log(`Bot is online! Logged in as ${client.user?.tag}`);
-  
+
+  initLogger(client);
+  await log("Bot online", GREEN, {
+    Account: c.user.tag,
+    Guilds: c.guilds.cache.size,
+  });
+
   // Initialize fonts once on startup to prevent memory leaks
   console.log('Initializing fonts...');
   initializeFonts();
@@ -107,9 +130,19 @@ client.once(Events.ClientReady, async (c) => {
       );
     }
     console.log("Commands refreshed");
+    await log("Commands deployed", BLUE, { Count: client.commands.size });
   } catch (error) {
     console.error(error);
+    await log("Command deploy failed", RED, { Error: (error as Error).message });
   }
+});
+
+client.on(Events.Error, (error) => {
+  log("Client error", RED, { Error: error.message });
+});
+
+process.on("unhandledRejection", (reason) => {
+  log("Unhandled rejection", RED, { Reason: String(reason) });
 });
 
 client.login(token);
